@@ -13,6 +13,7 @@ enum class TokenType {
     Cell,
     LeftParen,
     RightParen,
+    Decimal,
     End
 };
 
@@ -22,17 +23,34 @@ struct Token {
     string value;
 };
 
+string tokenToString(Token t) {
+    switch (t.type) {
+        case TokenType::Number: return "Number";
+        case TokenType::Plus: return "Plus";
+        case TokenType::Minus: return "Minus";
+        case TokenType::Mult: return "Mult";
+        case TokenType::Div: return "Div";
+        case TokenType::Cell: return "Cell";
+        case TokenType::LeftParen: return "LeftParen";
+        case TokenType::RightParen: return "RightParen";
+        case TokenType::Decimal: return "Decimal";
+        case TokenType::End: return "End";
+    }
+}
+
+
 // A lexer is something that tokenizes a given string input. We need the input, and a position pointer
 class Lexer {
     private:
         string input;
         int pos;
 
-        bool is_cell(char c, char prev) {
-            return isdigit(c) && isalpha(prev); // We identify it by something like A1, B2, etc., where prev is A-Z, and c is 0-9.
+        bool is_cell(char c, char after) {
+            return isalpha(c) && isdigit(after); // We identify it by something like A1, B2, etc., where prev is A-Z, and c is 0-9.
         }
 
         Token parseCell(string cell) {
+            pos += 2; // We have to skip the next character
             return Token{TokenType::Cell, cell};
         }
 
@@ -44,6 +62,30 @@ class Lexer {
                 current_char = input[pos];
             }
             return number;
+        }
+
+        string parseDecimal(char current_char) {
+            string decimal;
+            while (isdigit(current_char) || current_char == '.') {
+                decimal += current_char;
+                pos++;
+                current_char = input[pos];
+            }
+            return decimal;
+        }
+
+        bool isDecimal (char current_char) {
+            string decimal;
+            int pos_copy = pos;
+            while (isdigit(current_char) || current_char == '.') {
+                decimal += current_char;
+                pos_copy++;
+                current_char = input[pos_copy];
+            }
+            if (decimal.find('.') != std::string::npos) {
+                return true;
+            }
+            return false;
         }
 
     public:
@@ -61,11 +103,13 @@ class Lexer {
                 } else if (current_char == '=') { // An equals sign indicates the beginning of a formula
                     pos++;
                     continue;
-                // } else if (is_cell(current_char, input[pos - 1])) {
-                //     string cell = string(1, current_char) + string(1, input[pos - 1]); // Index error here, we should not try to access out of bounds
-                //     return parseCell(cell);
-                } else if (isdigit(current_char)) {
+                } else if (is_cell(current_char, input[pos + 1])) {
+                    string cell = string(1, current_char) + string(1, input[pos + 1]); // Index error here, we should not try to access out of bounds
+                    return parseCell(cell);
+                } else if (isDecimal(current_char)) {
                     // If the current char is a digit, we have to construct a string of digits
+                    return Token{TokenType::Decimal, parseDecimal(current_char)};
+                } else if (isdigit(current_char)) {
                     return Token{TokenType::Number, parseNumber(current_char)};
                 }
 
@@ -78,6 +122,22 @@ class Lexer {
                     case ')': pos++; return Token{TokenType::RightParen, ")"};
                 }
             }
+
             return Token{TokenType::End, ""};
         }
 };
+
+void print_lexer() {
+    Lexer lexer("3.2+2");
+    Token token = lexer.getNextToken();
+    vector<Token> tokens;
+    while (token.type != TokenType::End) {
+        cout << "Token type: " << tokenToString(token) << " Token value: " << token.value << endl;
+        tokens.push_back(token);
+        token = lexer.getNextToken();
+    }
+}
+
+int main() {
+    print_lexer();
+}
