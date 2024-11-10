@@ -171,7 +171,7 @@ int main() {
     table.print_table();
     // cout << t.get_cell(1, 'C');
 
-    Lexer lexer("B2 + B3");
+    Lexer lexer("1 + (-B2 + B3)");
     vector<Token> tokens = lexer.tokenize();
 
     // We need to go over each token, if it is a cell, replace it with the respective table value
@@ -179,5 +179,6 @@ int main() {
     Parser parser(tokens);
     stack<Token> output = parser.shunting_yard();
     // print_stack(output);
+    // cout << endl;
     cout << lexer.getInput() << " = " << evaluate_rpn(output);
 }

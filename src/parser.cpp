@@ -15,6 +15,7 @@ enum class TokenType {
     LeftParen,
     RightParen,
     Decimal,
+    Negation, // Note that negation must be surrounded by brackers i.e. (-1) or -(1)
     End
 };
 
@@ -36,6 +37,7 @@ string tokenToString(Token t) {
         case TokenType::LeftParen: return "LeftParen";
         case TokenType::RightParen: return "RightParen";
         case TokenType::Decimal: return "Decimal";
+        case TokenType::Negation: return "Negation";
         case TokenType::End: return "End";
     }
     return "Unknown";
@@ -97,10 +99,8 @@ class Lexer {
 
         // Yields the next token using the pos pointer
         Token getNextToken() {
-            
             while (pos < input.size()) {
                 char current_char = input[pos];
-                
                 if (isspace(current_char) || current_char == '=') {
                     // We skip whitespace and the equals sign (beginning of a formula)
                     pos++;
@@ -114,15 +114,19 @@ class Lexer {
                 } else if (isdigit(current_char)) {
                     return Token{TokenType::Number, parseNumber(current_char)};
                 }
-
                 // Operator logic
-                switch (current_char) {
-                    case '+': pos++; return Token{TokenType::Plus, "+"};
-                    case '-': pos++; return Token{TokenType::Minus, "-"};
-                    case '*': pos++; return Token{TokenType::Mult, "*"};
-                    case '/': pos++; return Token{TokenType::Div, "/"};
-                    case '(': pos++; return Token{TokenType::LeftParen, "("};
-                    case ')': pos++; return Token{TokenType::RightParen, ")"};
+                if (current_char == '-' && (input[pos + 1] == '(' || input[pos-1] == '(')) {
+                    pos++;
+                    return Token{TokenType::Negation, "-"};
+                } else {
+                    switch (current_char) {
+                        case '+': pos++; return Token{TokenType::Plus, "+"};
+                        case '-': pos++; return Token{TokenType::Minus, "-"};
+                        case '*': pos++; return Token{TokenType::Mult, "*"};
+                        case '/': pos++; return Token{TokenType::Div, "/"};
+                        case '(': pos++; return Token{TokenType::LeftParen, "("};
+                        case ')': pos++; return Token{TokenType::RightParen, ")"};
+                    }
                 }
             }
 
@@ -171,6 +175,8 @@ class Parser {
                 return 1;
             } else if (t.type == TokenType::Mult || t.type == TokenType::Div) {
                 return 2;
+            } else if (t.type == TokenType::Negation) {
+                return 3;
             }
             return 0;
         }
@@ -191,7 +197,7 @@ class Parser {
                         operators.pop();
                     }
                     operators.pop(); // Pop the left parenthesis
-                } else if (token.type == TokenType::Plus || token.type == TokenType::Minus || token.type == TokenType::Mult || token.type == TokenType::Div) {
+                } else if (token.type == TokenType::Plus || token.type == TokenType::Minus || token.type == TokenType::Mult || token.type == TokenType::Div || token.type == TokenType::Negation) {
                     while (!operators.empty() && precedence(operators.top()) >= precedence(token)) {
                         output.push(operators.top());
                         operators.pop();
@@ -248,6 +254,9 @@ bool isLiteral(Token t) {
     return t.type == TokenType::Number || t.type == TokenType::Decimal;
 }
 
+bool isUnary(Token t) {
+    return t.type == TokenType::Negation;
+}
 // A function that evaluates a reverse polish notation expression
 double evaluate_rpn(stack<Token> s) {
 
@@ -257,8 +266,14 @@ double evaluate_rpn(stack<Token> s) {
         Token token = s.top();
         s.pop();
 
+        if (isUnary(token)) {
+            double value = evaluationStack.top();
+            evaluationStack.pop();
+            evaluationStack.push(-value);
+        }
+
         // If we get an operator, we want to apply it.
-        if (isOperator(token)) {
+        else if (isOperator(token)) {
             // Our operands are stored on the evaluation stack
             double value2 = evaluationStack.top();
             evaluationStack.pop();
