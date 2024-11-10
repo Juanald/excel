@@ -10,9 +10,9 @@ I was inspired by reading Bill Gates: Hard Drive. This book followed Bill Gates'
 
 To run the engine, first formulate your data.csv file. The first row are usually the headers, and then follows data. For any cell, you can have an arithemtical expression referencing other cells: eg. =A2+B2\*-(B3). Note that the unary negation operator requires brackets.
 
-Clone the project by running `git clone https://github.com/Juanald/excel.git`
-Then navigate to the src directory: `cd excel/src`
-Build the project by running `make`
-Run the program by running `./excel.exe`
+Clone the project by running `git clone https://github.com/Juanald/excel.git`.
+Then navigate to the src directory: `cd excel/src`.
+Build the project by running `make`.
+Run the program by running `./excel.exe`.
 
 Improvements are welcome!
