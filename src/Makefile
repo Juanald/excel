@@ -1,10 +1,15 @@
 FLAGS = -Wall -Wextra -Werror -pedantic -std=c++11
 
-excel: excel.o
-	g++ $(FLAGS) -o excel excel.o
+SRCS = excel.cpp
+OBJS = excel.o
 
-excel.o: excel.cpp
-	g++ $(FLAGS) -c excel.cpp
+TARGET = excel
+
+$(TARGET): $(OBJS)
+	g++ $(FLAGS) -o $(TARGET) $(OBJS)
+
+%.o: %.cpp
+	g++ $(FLAGS) -c $<
 
 clean:
-	del -r excel.exe excel.o
+	del -r $(OBJS) $(TARGET)

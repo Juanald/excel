@@ -38,13 +38,15 @@ string tokenToString(Token t) {
         case TokenType::Decimal: return "Decimal";
         case TokenType::End: return "End";
     }
+    return "Unknown";
 }
 
 // A lexer is something that tokenizes a given string input. Used mainly for arithemtical expressions and cell references.
 class Lexer {
     private:
         string input;
-        int pos;
+        size_t pos;
+        vector<Token> tokens;
 
         // A cell is identified by somehing like A1, B2, etc.
         bool is_cell(char c, char after) {
@@ -130,6 +132,19 @@ class Lexer {
         string getInput() {
             return input;
         }
+
+        vector<Token> getTokens() {
+            return tokens;
+        }
+
+        vector<Token> tokenize() {
+            Token token = getNextToken();
+            while (token.type != TokenType::End) {
+                tokens.push_back(token);
+                token = getNextToken();
+            }
+            return tokens;
+        }
 };
 
 void print_lexer() {
@@ -207,7 +222,7 @@ void print_stack(stack<Token> s) {
         s.pop();
     }
     reverse(output.begin(), output.end());
-    for (int i = 0; i < output.size(); i++) {
+    for (size_t i = 0; i < output.size(); i++) {
         cout << output[i];
     }
 }
@@ -222,6 +237,7 @@ double calculate (double value, double value2, string op) {
     } else if (op == "/") {
         return value / value2;
     }
+    return 0;
 }
 
 bool isOperator(Token t) {
@@ -259,19 +275,4 @@ double evaluate_rpn(stack<Token> s) {
         }
     }
     return evaluationStack.top();
-}
-
-int main() {
-    Lexer lexer("3.2+(2-2.2)*6");
-    Token token = lexer.getNextToken();
-    vector<Token> tokens;
-    while (token.type != TokenType::End) {
-        tokens.push_back(token);
-        token = lexer.getNextToken();
-    }
-
-    Parser parser(tokens);
-    stack<Token> output = parser.shunting_yard();
-    // print_stack(output);
-    cout << lexer.getInput() << " = " << evaluate_rpn(output);
 }
