@@ -79,6 +79,30 @@ class Table {
         }
 };
 
+// A function that replaces cell references with their respective values
+void parse_cells(vector<Token>& tokens, Table& table) {
+    for (Token& token : tokens) {
+        if (token.type == TokenType::Cell) {
+            try
+            {
+                string cell_reference = token.value; // Each cell is A1 or B2, etc
+                Cell c = table.get_cell(cell_reference[1] - '0', cell_reference[0]); // Convert row to an integer
+                token.value = c.get_value();
+                if (token.value.find('.') != string::npos) {
+                    token.type = TokenType::Decimal;
+                } else {
+                    token.type = TokenType::Number;
+                }
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+            
+        }
+    }
+}
+
 class FileReader {
     private:
         vector<string> file_data;
@@ -126,7 +150,15 @@ class FileReader {
                 // Create cell objects from each csv value
                 for (const string& s : delimeted_string) {
                     if (s[0] == '=') {
-                        // We have a formula of type int(op)int(op)int.... Note, int can be references in the table.
+                        // We have to parse the input, replacing cell references with their numeric values prior to pushing to the row. 
+                        Lexer lexer(s);
+                        vector<Token> tokens = lexer.tokenize();
+                        parse_cells(tokens, t);
+                        Parser parser(tokens);
+                        stack<Token> output = parser.shunting_yard();
+                        double result = evaluate_rpn(output);
+                        Cell c(to_string(result));
+                        row.push_back(c);
 
                     } else {
                         // We have a regular value
@@ -140,29 +172,6 @@ class FileReader {
         }
 };
 
-// A function that replaces cell references with their respective values
-void parse_cells(vector<Token>& tokens, Table& table) {
-    for (Token& token : tokens) {
-        if (token.type == TokenType::Cell) {
-            try
-            {
-                string cell_reference = token.value; // Each cell is A1 or B2, etc
-                Cell c = table.get_cell(cell_reference[1] - '0', cell_reference[0]); // Convert row to an integer
-                token.value = c.get_value();
-                if (token.value.find('.') != string::npos) {
-                    token.type = TokenType::Decimal;
-                } else {
-                    token.type = TokenType::Number;
-                }
-            }
-            catch(const std::exception& e)
-            {
-                std::cerr << e.what() << '\n';
-            }
-            
-        }
-    }
-}
 
 int main() {
     FileReader reader("data.csv");
@@ -171,14 +180,20 @@ int main() {
     table.print_table();
     // cout << t.get_cell(1, 'C');
 
-    Lexer lexer("1 + (-B2 + B3)");
+    Lexer lexer("B2");
     vector<Token> tokens = lexer.tokenize();
+    // for (Token& t : tokens) {
+    //     cout << t.value << " ";
+    // }
 
-    // We need to go over each token, if it is a cell, replace it with the respective table value
-    parse_cells(tokens, table);
-    Parser parser(tokens);
-    stack<Token> output = parser.shunting_yard();
+    // // We need to go over each token, if it is a cell, replace it with the respective table value
+    // parse_cells(tokens, table);
+    // for (Token& t : tokens) {
+    //     cout << t.value << " ";
+    // }
+    // Parser parser(tokens);
+    // stack<Token> output = parser.shunting_yard();
     // print_stack(output);
     // cout << endl;
-    cout << lexer.getInput() << " = " << evaluate_rpn(output);
+    // cout << lexer.getInput() << " = " << evaluate_rpn(output);
 }
